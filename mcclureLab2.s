@@ -43,10 +43,10 @@ optionCheck:
     beq readError @ Branch to readError if equal 
 
     ldr r1, =input @ Load r1 with the address of the input  
-    ldr r3, [r1] @ Load r3 with the contents of the input 
-    cmp r3, #4 @ Compare r1 with 4
+    ldr r10, [r1] @ Load r10 with the contents of the input 
+    cmp r10, #4 @ Compare r1 with 4
     bgt beginPrompt @ Loop back to the beginning if r1 is greater than 4
-    cmp r3, #1 @ Compare r1 with 1
+    cmp r10, #1 @ Compare r1 with 1
     blt beginPrompt @ Loop back to the beginning if r1 is less than 1 
     b operandCheck @ Branch to the next label if everything checks out 
 
@@ -85,35 +85,72 @@ operandCheck:
 operationCall:
 @**********
 
-    cmp r3, #1 @ Check to see if the user wanted to add
+    push {r4, r5} @ Push the operands onto the stack 
+
+    cmp r10, #1 @ Check to see if the user wanted to add
     bleq addRoutine @ Branch to subroutine if that's what user wanted 
 
-    cmp r3, #2 @ Check to see if the user wanted to subtract 
+    cmp r10, #2 @ Check to see if the user wanted to subtract 
     bleq subRoutine @ Branch to subroutine if that's what user wanted 
 
-    cmp r3, #3 @ Check to see if user wanted to multiply 
+    cmp r10, #3 @ Check to see if user wanted to multiply 
     bleq mulRoutine @ Branch to subroutine if that's what user wanted 
 
-    cmp r3, #4 @ Check to see if user wanted to divide 
+    cmp r10, #4 @ Check to see if user wanted to divide 
     bleq divRoutine @ Branch to subroutine if that's what user wanted 
 
-    b choice  @ TODO: REMOVE THIS LATER
+    b opResult @ Branch to the label that will print out the operation result
 
+@ This label is for outputting the result of the operation
+@**********
+opResult: 
+@**********
+    
+    pop {r9} @ Pop the result of the operation into r9
+    ldr r0, = result @ Load r0 with the result prompt
+    mov r1, r9 @ Move the result into r1 for printing 
+    bl printf @ Print the result 
+    b choice @ Branch to the choice label 
+
+
+@ This branch is in case the user wants to perform another operation or wants to exit the program
+@**********
+choice: 
+@**********
+
+    b exit @ TODO: REMOVE THIS LATER
+
+@ This subroutine is for performing the addition operation for the two operands 
 @**********
 addRoutine:
 @**********
 
+    pop {r6, r7} @ Pop the operands into r6 and r7
+    adds r8, r6, r7 @ Add r6 and r7 and store it in r8 
+    push {r8} @ Push the result onto the stack 
+
+
 @**********
 subRoutine:
 @**********
+    pop {r6, r7} @ Pop the operands into r6 and r7
+    subs r8, r6, r7 @ Subtract r6 and r7 and store it in r8
+    push {r8} @ Push the result onto the stack
+
 
 @**********
 mulRoutine:
 @**********
 
+    pop {r6, r7} @ Pop the operands into r6 and r7
+    muls r8, r6, r7 @ Multiply r6 and r7 and store it in r8
+    push {r8} @ Push the result onto the stack
+
 @**********
 divRoutine: 
 @**********
+    pop {r6, r7} @ Pop the operands into r6 and r7
+    b exit @ TODO: REMOVE THIS LATER
 
 @ This label is for incorrect input and it branches back to the prompt 
 @**********
@@ -162,7 +199,7 @@ op1: .word 0
 op2: .word 0
 
 .balign 4
-numPrompt: .asciz "Please enter your two operands one at a time: \n"
+numPrompt: .asciz "Please enter your two operands one at a time in order: \n"
 
 .balign 4
 divideError: .asciz "You cannot divide a number by zero, please try again \n" 
@@ -172,4 +209,7 @@ tryAgain: .asciz "Would you like to perform another operation? \n"
 
 .balign 4
 options2: .asciz "[1] Yes [2] No \n"
+
+.balign 4 
+result: .asciz "The result of your operation is: %d \n" 
 
