@@ -78,7 +78,29 @@ operandCheck:
     cmp r5, #0 @ Compare the contents of r5 with 1
     blt operandCheck @ If r5 is less than 1, then loop back to operandCheck
 
-    @ TODO: Go back and check for input validation when checking for 0 as the dividend 
+    cmp r5, #0 @ Compare the contents of r5 with 1
+    beq divValid @ If r5 equals 0, then branch to the label that checks if the operation is division
+
+    b operationCall  @ Branch to the operationCall label by default if there are no errors 
+
+@ This label checks if the operation is division if the second operand is 0
+@**********
+divValid:
+@**********
+
+    cmp r10, #4 @ Compare r10 to 4 in case the current operation is division
+    beq notValid @ Branch to the error message label if the operation is division
+    b operationCall @ If division is not the operation then proceed 
+
+@ This label is in case the operation is division and the divisor is a 0
+@**********
+notValid:
+@**********
+
+    ldr r0, =divideError @ Load r0 with the rejection message 
+    bl printf @ Print the error message 
+    b beginPrompt @ Branch back to the beginning of the program 
+    
 
 @ This branch checks and sees what subroutine is needed for what operation based on what the user input 
 @**********
@@ -105,20 +127,54 @@ operationCall:
 @**********
 opResult: 
 @**********
-    
+    cmp r10, #4 @ Compare r10 to 4 
+    beq opResultDiv @ If equal then that means that the remainder also needs to be printed 
+    cmp r11, #1 @ Compare r11 to 1 
+    beq overflow @ Branch to overflow label if the overflow flag (r11) is set to 1 
+
+@**********
+opResult2:
+@**********
+
     pop {r9} @ Pop the result of the operation into r9
-    ldr r0, = result @ Load r0 with the result prompt
+    ldr r0, =result @ Load r0 with the result prompt
     mov r1, r9 @ Move the result into r1 for printing 
     bl printf @ Print the result 
     b choice @ Branch to the choice label 
 
+@**********
+opResultDiv:
+@**********
+
+    pop {r9, r10}
+    ldr r0, =result
+    mov r1, r9
+    bl printf
+    ldr r0, =remainder
+    mov r1, r10
+    bl printf 
+    b choice 
 
 @ This branch is in case the user wants to perform another operation or wants to exit the program
 @**********
 choice: 
 @**********
+    ldr r0, =tryAgain @ Load the prompt that asks the user if they want to try again 
+    bl printf @ Print the message
+    ldr r0, =options2 @ Load the options that the user has 
+    bl printf @ Print the message 
 
-    b exit @ TODO: REMOVE THIS LATER
+    ldr r0, =numInputPattern @ Load r0 with the integer input pattern
+    ldr r1, =input @ Load the input variable into r1
+    bl scanf @ Scan for input 
+    
+    ldr r1, =input @ Reload r1 with the address for the input
+    ldr r1, [r1] @ Load r1 with the contents of the addresss
+    cmp r1, #1 @ Compare the contents of r1 with 1
+    beq beginPrompt @ If equal that means user wants to perform another calculation
+    cmp r1, #2 @ Compare the contents of r2 with 2
+    beq exit @ If equal that means the user does not want to perform another calculation
+    b exit @ If the user doesn't enter a 1 or 2 then exit the program 
 
 @ This subroutine is for performing the addition operation for the two operands 
 @**********
@@ -127,7 +183,9 @@ addRoutine:
 
     pop {r6, r7} @ Pop the operands into r6 and r7
     adds r8, r6, r7 @ Add r6 and r7 and store it in r8 
+    movvs r11, #1 
     push {r8} @ Push the result onto the stack 
+    mov pc, lr @ Transfer the return address to the program counter
 
 
 @**********
@@ -136,7 +194,7 @@ subRoutine:
     pop {r6, r7} @ Pop the operands into r6 and r7
     subs r8, r6, r7 @ Subtract r6 and r7 and store it in r8
     push {r8} @ Push the result onto the stack
-
+    mov pc, lr @ Transfer the return address to the program counter
 
 @**********
 mulRoutine:
@@ -144,13 +202,33 @@ mulRoutine:
 
     pop {r6, r7} @ Pop the operands into r6 and r7
     muls r8, r6, r7 @ Multiply r6 and r7 and store it in r8
+    movvs r11, #1
     push {r8} @ Push the result onto the stack
+    mov pc, lr @ Transfer the return address to the program counter
 
 @**********
 divRoutine: 
 @**********
     pop {r6, r7} @ Pop the operands into r6 and r7
-    b exit @ TODO: REMOVE THIS LATER
+    mov r8, #0
+
+@**********
+divRoutine2:
+@**********
+    subs r7, r6, r7 
+    add r8, r8, #1
+    cmp r6, r7
+    bgt divRoutine2
+    push {r7, r8} 
+    mov pc, lr
+
+@**********
+overflow:
+@**********
+    ldr r0, =overflowPrompt
+    bl printf 
+    b opResult2
+
 
 @ This label is for incorrect input and it branches back to the prompt 
 @**********
@@ -212,4 +290,10 @@ options2: .asciz "[1] Yes [2] No \n"
 
 .balign 4 
 result: .asciz "The result of your operation is: %d \n" 
+
+.balign 4 
+remainder: .asciz "The remainder is %d \n" 
+
+.balign 4
+overflowPrompt: .asciz "Overflow occured while performing your operation \n"
 
