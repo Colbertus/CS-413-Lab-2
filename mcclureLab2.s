@@ -14,6 +14,17 @@
 @ ./mcclureLab2
 @ gdb --args ./mcclureLab2
 
+@ Registers and their uses: 
+@ r4: Operand 1 for the input 
+@ r5: Operand 2 for the input 
+@ r6: Operand 1 for the subroutine 
+@ r7: Operand 2 for the subroutine 
+@ r8: Used to push the result of the operation 
+@ r9: Used to pop the result of the operation for printing 
+@ r10: Used for storing the operand choice that the user desires/Used to pop the remainder for division  
+@ r11: Used as a flag in case an overflow occured
+@ 
+
 .equ READERROR, 0
 .global main 
 .text
@@ -132,6 +143,7 @@ opResult:
     cmp r11, #1 @ Compare r11 to 1 
     beq overflow @ Branch to overflow label if the overflow flag (r11) is set to 1 
 
+@ This label is for executing the division loop 
 @**********
 opResult2:
 @**********
@@ -142,18 +154,20 @@ opResult2:
     bl printf @ Print the result 
     b choice @ Branch to the choice label 
 
+@ This branch is for displaying the the results of the division operattion
 @**********
 opResultDiv:
 @**********
 
-    pop {r9, r10}
-    ldr r0, =result
-    mov r1, r10
-    bl printf
-    ldr r0, =remainder
-    mov r1, r9
-    bl printf 
-    b choice 
+    pop {r9, r10} @ Pop the answer and remainder into r9 and r10
+    ldr r0, =result @ Load r0 with the results message 
+    mov r1, r10 @ Move the result into r1 for printing 
+    bl printf @ Print the result 
+
+    ldr r0, =remainder @ Load r0 with the remainder message
+    mov r1, r9 @ Move the remainder into r1 
+    bl printf @ Print the remainder message along with the remainder 
+    b choice @ Branch to the choice label 
 
 @ This branch is in case the user wants to perform another operation or wants to exit the program
 @**********
@@ -183,11 +197,11 @@ addRoutine:
 
     pop {r6, r7} @ Pop the operands into r6 and r7
     adds r8, r6, r7 @ Add r6 and r7 and store it in r8 
-    movvs r11, #1 
+    movvs r11, #1 @ Set the flag in r11 if overflow occurred 
     push {r8} @ Push the result onto the stack 
     mov pc, lr @ Transfer the return address to the program counter
 
-
+@ This subroutine is for subtraction 
 @**********
 subRoutine:
 @**********
@@ -196,63 +210,69 @@ subRoutine:
     push {r8} @ Push the result onto the stack
     mov pc, lr @ Transfer the return address to the program counter
 
+@ This is the subroutine for multiplication
 @**********
 mulRoutine:
 @**********
 
     pop {r6, r7} @ Pop the operands into r6 and r7
     muls r8, r6, r7 @ Multiply r6 and r7 and store it in r8
-    movvs r11, #1
+    movvs r11, #1 @ Check for overflow by using r11 as a flag for overflow 
     push {r8} @ Push the result onto the stack
     mov pc, lr @ Transfer the return address to the program counter
 
+@ This label is the beginning of the division routine 
 @**********
 divRoutine: 
 @**********
     pop {r6, r7} @ Pop the operands into r6 and r7
-    mov r8, #0
+    mov r8, #0 @ Set the counter in r8 
 
-    cmp r6, r7 
-    bgt divRoutine2
+    cmp r6, r7 @ Compare r6 and r7 
+    bgt divRoutine2 @ If r6 is greater than branch to the loop 
 
-    cmp r6, r7
-    movlt r8, #0
+    cmp r6, r7 @ Compare r6 and r7 
+    movlt r8, #0 @ If r6 is less than r7, then move 0 to r8 
 
-    cmp r6, r7
-    blt divRoutine3
+    cmp r6, r7 @ Compare r6 and r7 
+    blt divRoutine3 @ If r6 is less than r7 then branch to the end of the division 
     
-    cmp r6, r7
-    moveq r6, #0
+    cmp r6, r7 @ Compare r6 and r7 
+    moveq r6, #0 @ If they are equal then set r6 equal to 0 
     
-    mov r8, #1
-    b divRoutine3 
+    mov r8, #1 @ Set r8 equal to 1
+    b divRoutine3 @ Branch to the end of the division routine 
 
+@ This label is part of the division subroutine and is used for the division loop
 @**********
 divRoutine2:
 @**********
-    subs r6, r6, r7
-    add r8, r8, #1
+    subs r6, r6, r7 @ Subtract r6 from r7 and put the answer in r6
+    add r8, r8, #1 @ Increment the counter by 1 
 
-    cmp r6, r7
-    bgt divRoutine2
+    cmp r6, r7 @ Compare r6 and r7
+    bgt divRoutine2 @ If the dividend is bigger than the divisor then loop back 
 
-    cmp r6, r7
-    beq divRoutine2 
+    cmp r6, r7 @ Compare r6 and r7
+    beq divRoutine2 @ If the dividend is equal to the divisor then perform the loop one more time
     
-    b divRoutine3 
+    b divRoutine3 @ Branch to the end of subroutine
 
+@ This label is the last part of the division subroutine
 @**********
 divRoutine3:
 @**********
-    push {r6, r8}
-    mov pc, lr 
 
+    push {r6, r8} @ Push the contents of r6 and r8 
+    mov pc, lr @ Move the link register to the program counter 
+
+@ This label is for notifiying the user when an overflow occurs 
 @**********
 overflow:
 @**********
-    ldr r0, =overflowPrompt
-    bl printf 
-    b opResult2
+    ldr r0, =overflowPrompt @ Load r0 with the overflow prompt 
+    bl printf @ Make the print call 
+    b opResult2 @ Branch to opResult2
 
 
 @ This label is for incorrect input and it branches back to the prompt 
@@ -260,17 +280,17 @@ overflow:
 readError:
 @**********
 
-	ldr r0, =strInputPattern
-	ldr r1, =strInputError
-	bl scanf
-	b beginPrompt
+	ldr r0, =strInputPattern @ Load r0 with the string input pattern
+	ldr r1, =strInputError @ Load r1 with the input error 
+	bl scanf @ Scan for input 
+	b beginPrompt @ Branch back to the beginning prompt 
 
 @ This label ends the program 
 @**********
 exit:
 @**********
 
-	mov r7, #0x01
+	mov r7, #0x01 
 	svc 0
 
 
