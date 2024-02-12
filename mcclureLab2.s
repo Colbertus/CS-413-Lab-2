@@ -148,10 +148,10 @@ opResultDiv:
 
     pop {r9, r10}
     ldr r0, =result
-    mov r1, r9
+    mov r1, r10
     bl printf
     ldr r0, =remainder
-    mov r1, r10
+    mov r1, r9
     bl printf 
     b choice 
 
@@ -212,15 +212,40 @@ divRoutine:
     pop {r6, r7} @ Pop the operands into r6 and r7
     mov r8, #0
 
+    cmp r6, r7 
+    bgt divRoutine2
+
+    cmp r6, r7
+    movlt r8, #0
+
+    cmp r6, r7
+    blt divRoutine3
+    
+    cmp r6, r7
+    moveq r6, #0
+    
+    mov r8, #1
+    b divRoutine3 
+
 @**********
 divRoutine2:
 @**********
-    subs r7, r6, r7 
+    subs r6, r6, r7
     add r8, r8, #1
+
     cmp r6, r7
     bgt divRoutine2
-    push {r7, r8} 
-    mov pc, lr
+
+    cmp r6, r7
+    beq divRoutine2 
+    
+    b divRoutine3 
+
+@**********
+divRoutine3:
+@**********
+    push {r6, r8}
+    mov pc, lr 
 
 @**********
 overflow:
@@ -277,7 +302,7 @@ op1: .word 0
 op2: .word 0
 
 .balign 4
-numPrompt: .asciz "Please enter your two operands one at a time in order: \n"
+numPrompt: .asciz "Please enter your two postive integers/or zero operands one at a time in order: \n"
 
 .balign 4
 divideError: .asciz "You cannot divide a number by zero, please try again \n" 
@@ -292,7 +317,7 @@ options2: .asciz "[1] Yes [2] No \n"
 result: .asciz "The result of your operation is: %d \n" 
 
 .balign 4 
-remainder: .asciz "The remainder is %d \n" 
+remainder: .asciz "The remainder is: %d \n" 
 
 .balign 4
 overflowPrompt: .asciz "Overflow occured while performing your operation \n"
