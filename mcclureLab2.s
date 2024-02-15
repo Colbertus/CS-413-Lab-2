@@ -22,7 +22,7 @@
 @ r8: Used to push the result of the operation 
 @ r9: Used to pop the result of the operation for printing 
 @ r10: Used for storing the operand choice that the user desires/Used to pop the remainder for division  
-@ r11: Used as a flag in case an overflow occurred
+@ r11: Used as a flag in case an overflow occured
 @ 
 
 .equ READERROR, 0
