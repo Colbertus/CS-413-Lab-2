@@ -22,7 +22,7 @@
 @ r8: Used to push the result of the operation 
 @ r9: Used to pop the result of the operation for printing 
 @ r10: Used for storing the operand choice that the user desires/Used to pop the remainder for division  
-@ r11: Used as a flag in case an overflow occured
+@ r11: Used as a flag in case an overflow occurred
 @ 
 
 .equ READERROR, 0
@@ -216,8 +216,9 @@ mulRoutine:
 @**********
 
     pop {r6, r7} @ Pop the operands into r6 and r7
-    muls r8, r6, r7 @ Multiply r6 and r7 and store it in r8
-    movvs r11, #1 @ Check for overflow by using r11 as a flag for overflow 
+    umull r8, r1, r6, r7 @ Multiply r6 and r7 and store it in r8
+    cmp r1, #0 @ Compare r1 to 0 to check for overflow 
+    movne r11, #1 @ Check for overflow by using r11 as a flag for overflow 
     push {r8} @ Push the result onto the stack
     mov pc, lr @ Transfer the return address to the program counter
 
